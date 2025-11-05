@@ -29,15 +29,15 @@ const Canvas1 = () => {
         light.position.set(0, 0.8, -1.3)
         scene.add(light, ambLight)
 
-        const grid = new THREE.GridHelper(20, 100)
-        scene.add(grid)
+        // const grid = new THREE.GridHelper(20, 100)
+        // scene.add(grid)
 
         let tomato;
         loader.load('/tomato.glb', function (glb) {
             glb.scene.scale.multiplyScalar(5);
             tomato = glb.scene
             tomato.position.y = -0.1
-            tomato.position.x = 2
+            tomato.position.x = 2.5
             scene.add(tomato);
         })
 
@@ -54,7 +54,7 @@ const Canvas1 = () => {
             glb.scene.scale.multiplyScalar(0.5);
             zucchini = glb.scene
             zucchini.position.y = -0.1
-            zucchini.position.x = -2
+            zucchini.position.x = -2.5
             scene.add(zucchini);
         })
 
@@ -70,7 +70,7 @@ const Canvas1 = () => {
 
         const moveCamera = () => { // Move it as we scroll the DOM
             const t = document.body.getBoundingClientRect().top
-            camera.position.y = t * -0.002
+            camera.position.y = (t * -0.002) + 0.5 // 0.5 came from our y initial position
         }
         document.body.onscroll = moveCamera
 
@@ -79,6 +79,9 @@ const Canvas1 = () => {
             requestAnimationFrame(animate)
             controls.update()
             renderer.render(scene, camera)
+            if (tomato) tomato.rotateY(0.02)
+            if (zucchini) zucchini.rotateY(0.02)
+            if (pasta) pasta.rotateY(0.02)
         }
 
         animate()
