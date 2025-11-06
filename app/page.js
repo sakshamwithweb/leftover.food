@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 export default function Home() {
   return (
     <div className="text-white bg-black">
-      <Canvas1 className="z-0" />
-      <main className="relative flex flex-col z-99">
+      <Canvas1 />
+      <main className="absolute w-screen h-[150vw] flex flex-col z-99 pointer-events-none">
         <section className="h-screen w-screen flex justify-center items-center">
           <h2 className="text-5xl font-bold">Got leftover ingredients lying around?</h2>
         </section>
