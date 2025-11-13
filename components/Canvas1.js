@@ -191,7 +191,7 @@ const Canvas1 = () => {
             end: 60,
             func: () => {
                 // Here blow up all things and show the new recipe
-                explosionAndReadyMeal(lerp(0, 5, scalePercent(50, 80)), scalePercent(50, 60))
+                explosionAndReadyMeal(lerp(0, 5, scalePercent(45, 60)), scalePercent(45, 60))
             }
         })
 
