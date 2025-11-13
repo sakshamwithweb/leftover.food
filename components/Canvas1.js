@@ -3,7 +3,6 @@
 import React, { useEffect, useRef } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import JEASINGS from 'jeasings'
 
@@ -20,14 +19,12 @@ const Canvas1 = () => {
 
         const scene = new THREE.Scene()
         const camera = new THREE.PerspectiveCamera(100, window.innerWidth / window.innerHeight, 0.1, 1000)
-        camera.position.setZ(1.3)
+        camera.position.setZ(2)
         camera.position.setY(0.5)
 
         const renderer = new THREE.WebGLRenderer({ canvas: canvas.current })
         renderer.setPixelRatio(window.devicePixelRatio)
         renderer.setSize(window.innerWidth, window.innerHeight)
-
-        const controls = new OrbitControls(camera, renderer.domElement)
 
         const light = new THREE.PointLight(0xffffff, 4, 100)
         const ambLight = new THREE.AmbientLight(0xffffff, 0.5)
@@ -36,13 +33,16 @@ const Canvas1 = () => {
 
 
         //---------------------Load Models------------------------
+        var pivot = new THREE.Object3D();
+        pivot.position.set(0, 0, 0)
+
         let tomato;
         loader.load('/tomato.glb', function (glb) {
             glb.scene.scale.multiplyScalar(5);
             tomato = glb.scene
             tomato.position.y = -0.1
             tomato.position.x = 2.5
-            scene.add(tomato);
+            pivot.add(tomato);
         })
 
         let pasta;
@@ -50,7 +50,7 @@ const Canvas1 = () => {
             glb.scene.scale.multiplyScalar(0.4);
             pasta = glb.scene
             pasta.position.y = -0.1
-            scene.add(pasta);
+            pivot.add(pasta);
         })
 
         let zucchini;
@@ -59,8 +59,9 @@ const Canvas1 = () => {
             zucchini = glb.scene
             zucchini.position.y = -0.1
             zucchini.position.x = -2.5
-            scene.add(zucchini);
+            pivot.add(zucchini);
         })
+        scene.add(pivot)
 
         const generateStars = () => {
             const geometry = new THREE.BufferGeometry()
@@ -81,6 +82,14 @@ const Canvas1 = () => {
         }
         generateStars()
 
+        let finalMeal; // Change this
+        loader.load('/zucchini.glb', function (glb) {
+            glb.scene.scale.multiplyScalar(0.5)
+            finalMeal = glb.scene
+            finalMeal.position.set(0, 0, 0)
+            finalMeal.visible = false
+            scene.add(finalMeal)
+        })
 
         //---------------------Resizing Adjustments------------------------
         window.addEventListener('resize', () => {
@@ -110,18 +119,107 @@ const Canvas1 = () => {
 
         //---------------------Animations on Specific Keyframed------------------------
 
+        const lerp = (x, y, a) => { // x,y,a = start,end,current
+            return (1 - a) * x + a * y // Returning current value b/w x and y
+        }
+
+        const scalePercent = (start, end) => {
+            return (scrollPercent - start) / (end - start)
+        }
+
+        const explodeSphereMat = new THREE.MeshLambertMaterial({ visible: false, color: 0xffff00, side: THREE.BackSide })
+
+        const explodeSphere = new THREE.Mesh(new THREE.SphereGeometry(1.5), explodeSphereMat)
+        const newL = new THREE.PointLight(0xffff00, 0)
+        newL.position.set(0, 0.5, 2)
+        scene.add(newL)
+        explodeSphere.position.set(0, 0.5, 2)
+        scene.add(explodeSphere)
+
+        const explosionAndReadyMeal = (intensity, percentage) => {
+            // console.log(`intensity: ${intensity}\npercentage:${percentage}`)
+
+            if (intensity >= 0 && percentage < 0.9) {
+                if (intensity != newL.intensity) {// to prevent same value being written again and again to kill the comp
+                    newL.intensity = intensity // change light intensity
+                    if (!explodeSphereMat.visible) {
+                        explodeSphereMat.visible = true // Make the sphare visisble
+                    }
+                }
+
+                if(finalMeal.visible) finalMeal.visible = false
+                if(!pivot.visible) pivot.visible = true
+            } else { // Opposite of if condition to make all things normal again
+                if (intensity != 0) {
+                    newL.intensity = 0
+                }
+                if (explodeSphereMat.visible) {
+                    explodeSphereMat.visible = false
+                }
+                if (!finalMeal.visible && percentage > 0.95) {
+                    finalMeal.visible = true
+                    pivot.visible = false
+                }
+            }
+        }
+
+        let scrollPercent = 0;
+
+        document.body.onscroll = () => {
+            scrollPercent = (document.documentElement.scrollTop / (document.documentElement.scrollHeight - document.documentElement.clientHeight)) * 100
+        }
+
+        const animationScript = []
+
+        animationScript.push({
+            start: 1,
+            end: 50,
+            func: () => {
+                // Start revolving the models
+                if (pivot && zucchini && tomato) {
+                    pivot.rotateY(lerp(0.05, 1, scalePercent(0, 50)))
+                    // Get closer
+                    zucchini.position.setX(lerp(-2.5, 0.1, scalePercent(0, 50)))
+                    tomato.position.setX(lerp(2.5, 0.1, scalePercent(0, 50)))
+                }
+
+            }
+        })
+
+        animationScript.push({
+            start: 45,
+            end: 60,
+            func: () => {
+                // Here blow up all things and show the new recipe
+                explosionAndReadyMeal(lerp(0, 5, scalePercent(50, 80)), scalePercent(50, 60))
+            }
+        })
+
+        animationScript.push({
+            start:60,
+            end:110,
+            func: () => {
+                // Here bring the camera closer
+                finalMeal.rotateY(0.05)
+                camera.position.setZ(lerp(2,0.5,scalePercent(60,100)))
+            }
+        })
+
+        const playScrollAnimations = () => {
+            animationScript.forEach((a) => {
+                if (scrollPercent >= a.start && scrollPercent < a.end) {
+                    a.func()
+                }
+            })
+        }
 
 
         //---------------------Last Setup------------------------
         const animate = () => {
             requestAnimationFrame(animate)
-            controls.update()
+            playScrollAnimations()
             JEASINGS.update()
             render()
-
-            if (tomato) tomato.rotateY(0.02)
-            if (zucchini) zucchini.rotateY(0.02)
-            if (pasta) pasta.rotateY(0.02)
         }
 
         const render = () => {
@@ -133,7 +231,7 @@ const Canvas1 = () => {
     }, [])
 
 
-    return <canvas className="fixed top-0 left-0 pointer-events-none" ref={canvas}></canvas>
+    return <canvas className="fixed top-0 left-0" ref={canvas}></canvas>
 }
 
 export default Canvas1

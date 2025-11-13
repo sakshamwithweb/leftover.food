@@ -1,5 +1,6 @@
 import Canvas1 from "@/components/Canvas1";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 export default function Home() {
   return (
@@ -19,7 +20,9 @@ export default function Home() {
           <p className="text-4xl font-semibold text-gray-300">
             Join our community and start transforming your leftovers today.
           </p>
-          <Button className="text-black" variant="outline">Get Started</Button>
+          <Link href={"/login"}>
+            <Button className="text-black pointer-events-auto" variant="outline">Get Started</Button>
+          </Link>
         </section>
       </main>
     </div>
